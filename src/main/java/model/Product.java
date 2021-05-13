@@ -1,27 +1,22 @@
 package model;
 
-import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
-import com.google.firebase.database.annotations.NotNull;
-import dao.FirebaseService;
 import lombok.*;
-
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Builder
 @Getter
 @Setter
 @AllArgsConstructor
 @ToString
-public class Product {
+public class Product extends FirestoreDocument {
     String brandName;
 
+    @DateTimeFormat
     String buyDate;
 
     String color;
-    
+
+    @NonNull
     String category;
 
     String source;
@@ -32,10 +27,12 @@ public class Product {
 
     String occasion;
 
+    @NonNull
     String ownerId;
 
     String description;
 
+    @NonNull
     Long price;
 
     public Product() {

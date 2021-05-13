@@ -1,19 +1,30 @@
 package Service;
 
-import dao.FirebaseService;
-import dao.FirebaseServiceImpl;
+import dao.FirebaseDao;
+import dao.FirebaseDaoImpl;
 import model.Product;
 
 import java.util.List;
 
 public class Test {
 
-    private static FirebaseService firebaseService;
+    private static FirebaseDao firebaseDao;
 
     public static void main(String[] args) throws Exception {
 
-        firebaseService = new FirebaseServiceImpl();
-        List<Product> products = firebaseService.getAll2("Product", new Product());
+        firebaseDao = new FirebaseDaoImpl();
+
+        Product sample = Product.builder()
+          .brandName("Skechers")
+          .category("Shoes")
+          .price(5500L)
+          .ownerId("vvvinamer")
+          .build();
+
+
+        System.out.println(firebaseDao.saveDocumentForCollection("Product", sample));
+        List<Product> products = firebaseDao.getAllDocumentsByCollection("Product", Product.class);
         products.forEach(System.out::println);
     }
+
 }
