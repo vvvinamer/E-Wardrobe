@@ -1,26 +1,29 @@
 package dao;
+
 import Utils.Utils;
 import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 
+import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.firebase.database.utilities.Pair;
 import model.FirestoreDocument;
-import model.Product;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 
@@ -52,10 +55,23 @@ public class FirebaseDaoImpl implements FirebaseDao {
     }
 
     @Override
-    public <T> List<T> getAllDocumentsByCollection(String collectionName, Class<T> cls) throws
+    public <T> List<T> getAllDocumentsForCollection(String collectionName, Class<T> cls,
+                                                   List<Pair<String, Object>> filters) throws
       ExecutionException, InterruptedException {
         // asynchronously retrieve all documents
-        ApiFuture<QuerySnapshot> query = db.collection(collectionName).get();
+        CollectionReference collectionReference = db.collection(collectionName);
+        Query query1;
+        ApiFuture<QuerySnapshot> query = collectionReference.get();
+
+
+        if(Objects.nonNull(filters)){
+            query1 = collectionReference.whereEqualTo(filters.get(0).getFirst(), filters.get(0).getSecond());
+            for(int i = 1; i < filters.size(); i++) {
+                query1 = query1.whereEqualTo(filters.get(i).getFirst(), filters.get(i).getSecond());
+            }
+            query = query1.get();
+        }
+
         QuerySnapshot querySnapshot = query.get();
         List<T> docs = new ArrayList<>();
 
@@ -63,14 +79,12 @@ public class FirebaseDaoImpl implements FirebaseDao {
 
         List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
         for (QueryDocumentSnapshot document : documents) {
-            System.out.println(document.getId());
             obj = document.toObject(cls);
             docs.add(obj);
         }
         return docs;
     }
 
-//    @TODO whenever a new Document(Product is created), it would be added in User Docs
     @Override
     public <T extends FirestoreDocument> String saveDocumentForCollection(String collectionName, T document)
       throws Exception {
@@ -78,22 +92,10 @@ public class FirebaseDaoImpl implements FirebaseDao {
         String documentId = Utils.generateDocId();
         DocumentReference docRef = db.collection(collectionName).document(documentId);
         ApiFuture<WriteResult> result = docRef.set(document);
-
-        if (Product.class.equals(document.getClass())) {
-            addProductForUser(((Product)document).getOwnerId(), documentId);
-        }
         return result.get().getUpdateTime().toString();
     }
 
 
-    private void addProductForUser(String ownerId, String productId) throws ExecutionException,
-                                                                               InterruptedException {
-        DocumentReference docRef = db.collection("User")
-                                     .document(ownerId)
-                                     .collection("product")
-                                     .document(productId);
-        ApiFuture<WriteResult> result = docRef.set(new HashMap<>());
-    }
 
 
 }
